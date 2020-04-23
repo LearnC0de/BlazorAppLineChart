@@ -1,0 +1,134 @@
+﻿@page "/linechart"
+
+@using ChartJs.Blazor.Charts
+@using ChartJs.Blazor.ChartJS.LineChart
+@using ChartJs.Blazor.ChartJS.Common.Properties
+@using ChartJs.Blazor.ChartJS.Common.Wrappers
+@using ChartJs.Blazor.ChartJS.Common.Enums
+@using ChartJs.Blazor.ChartJS.Common.Handlers
+@using ChartJs.Blazor.ChartJS.Common.Axes
+@using ChartJs.Blazor.Util
+
+@using BlazorAppLineChart.Data
+@inject AmountService TransferService
+
+<h1>LineChart</h1>
+<button class="btn btn-primary" @onclick="AddData">Add dataset</button>
+<ChartJsLineChart @ref="_lineChartJs" Config="@_config" Width="600" Height="300" />
+
+@code {
+    private LineConfig _config;
+    private ChartJsLineChart _lineChartJs;
+    private Random _rnd;
+    private static int _count = 1;
+
+    protected override async void OnInitialized()
+    {
+        _rnd = new Random();
+        _config = new LineConfig
+        {
+            Options = new LineOptions
+            {
+                Responsive = true,
+                Title = new OptionsTitle
+                {
+                    Display = true,
+                    Text = "Line Chart"
+                },
+                Legend = new Legend
+                {
+                    Position = Position.Right,
+                    Labels = new LegendLabelConfiguration
+                    {
+                        UsePointStyle = true
+                    }
+                },
+                Tooltips = new Tooltips
+                {
+                    Mode = InteractionMode.Nearest,
+                    Intersect = false
+                },
+                Scales = new Scales
+                {
+                    xAxes = new List<CartesianAxis>
+                    {
+                        new CategoryAxis
+                        {
+                            ScaleLabel = new ScaleLabel
+                            {
+                                LabelString = "Month"
+                            }
+                        }
+                    },
+                    yAxes = new List<CartesianAxis>
+                    {
+                        new LinearCartesianAxis
+                        {
+                            ScaleLabel = new ScaleLabel
+                            {
+                                LabelString = "Amount (Currency)"
+                            }
+                        }
+                    }
+                },
+                Hover = new LineOptionsHover
+                {
+                    Intersect = true,
+                    Mode = InteractionMode.Y
+                },
+                Animation = new Animation
+                {
+                    Easing = Easing.Linear,
+                    Duration = 1000
+                }
+            }
+        };
+
+        var lineDataset = new LineDataset<DoubleWrapper>
+        {
+            BackgroundColor = ColorUtil.ColorString(255, 255, 255, 1.0),
+            BorderColor = ColorUtil.ColorString(0, 0, 255, 1.0),
+            Label = "Amount " + _count++,
+            Fill = false,
+            PointBackgroundColor = ColorUtil.ColorString(255, 255, 255, 1.0),
+            BorderWidth = 2,
+            PointRadius = 3,
+            PointBorderWidth = 1,
+            SteppedLine = SteppedLine.False
+        };
+
+        var data = await TransferService.GetAmountAsync();
+        var chartdata = data.Select(d => new DoubleWrapper(d)).ToArray();
+
+        lineDataset.AddRange(chartdata);
+
+        _config.Data.Datasets.Add(lineDataset);
+        _config.Data.Labels = new List<string> { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul" };
+    }
+
+    private async void AddData()
+    {
+        var data = await TransferService.GetAmountAsync();
+        string lineColor = ColorUtil.RandomColorString();
+
+        var lineDataset = new LineDataset<DoubleWrapper>
+        {
+            BackgroundColor = lineColor,
+            BorderColor = lineColor,
+            Label = "Amount "+ _count++,
+            Fill = false,
+            PointBackgroundColor = lineColor,
+            BorderWidth = 2,
+            PointRadius = 3,
+            PointBorderWidth = 1,
+            SteppedLine = SteppedLine.False
+        };
+
+        var chartdata = data.Select(d => new DoubleWrapper(d)).ToArray();
+
+        lineDataset.AddRange(chartdata);
+        _config.Data.Datasets.Add(lineDataset);
+
+        await _lineChartJs.Update();
+    }
+}
